@@ -1,3 +1,18 @@
+PLEASE NOTIFY ME YOU THINK I VIOLATE A LICENCE OR SOMEONE'S RIGHTS. 
+
+Code obtained from: http://humaneva.is.tue.mpg.de/datasets_human_1
+
+Initial commit is "as is". 
+
+Xvid files can't be opened with 64bit linux Matlab. Toolbox_dxAvi is for windows, pre-compiled mex files for 32bit linux can be found online.
+
+This is an attempt to make the default code work with Matlab R2014b's "VideoReader" object.
+
+
+Original readme file below.
+
+++++++++++++++++++
+
 +---------------------------------------------------------------+
 |          HumanEva-I Dataset and Support Code Read-Me          |
 |                        (v. 1.1 beta)                          |
