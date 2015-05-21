@@ -2,6 +2,6 @@
 for i=1:100;
 	i
 	[avi_hdl, avi_inf] = dxAviOpen([pathname,filename]);
-	[pixmap, t] = dxAviReadMex(avi_hdl, 10);
-	dxAviCloseMex(avi_hdl);
+	pixmap = read(avi_hdl, 10);
+% 	dxAviCloseMex(avi_hdl);
 end
