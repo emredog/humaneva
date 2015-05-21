@@ -1,5 +1,5 @@
 function [] = ComputeError3DExample()
-% Example of how HumanEva-II dataset should be used to compute 3D error with
+% Example of how HumanEva dataset should be used to compute 3D error with
 % validation data.
 %
 % Written by: Leonid Sigal 
@@ -30,7 +30,7 @@ addpath('./TOOLBOX_readc3d/');
 
 % You can replace the 'Validate' by 'Train' or 'Test', to make this work
 % on different sub-sets of data.
-CurrentDataset = he_dataset('HumanEvaII', 'Test'); 
+CurrentDataset = he_dataset('HumanEvaI', 'Validate'); 
 
 for SEQ = 1:length(CurrentDataset)
     fprintf('Loading sequence ... \n')
@@ -81,8 +81,7 @@ for SEQ = 1:length(CurrentDataset)
                 %         .
                 % set(customHead, 'torsoDistal',   [1, 2, 3]);  % 3D location of the joint
 
-                fprintf('Absolute error for frame %d is: %f (mm)\n', FRAME, error(groundTruthPose, customPose));                    
-                fprintf('Relative error for frame %d is: %f (mm)\n', FRAME, error_rel(groundTruthPose, customPose));                    
+                fprintf('Error for frame %d is: %f (mm)\n', FRAME, error(groundTruthPose, customPose));                    
             else
                 warning('Mocap data is invalid');
             end

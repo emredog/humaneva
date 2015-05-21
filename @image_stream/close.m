@@ -37,26 +37,26 @@ function [st] = close(this)
 
 st = 0;
 
-if (length(this) > 1)
-    for I = 1:length(this)
-        if (this(I).avi_hdl)
-            try
-                dxAviCloseMex(this(I).avi_hdl);
-                st(I) = 0;
-            catch
-                st(I) = -1;
-            end
-        end
-    end
-else
-    if (this.avi_hdl)
-        try
-            dxAviCloseMex(this.avi_hdl);
-            st = 0;
-        catch
-            st = -1;
-        end            
-    end
-end
+% if (length(this) > 1)
+%     for I = 1:length(this)
+%         if (this(I).avi_hdl)
+%             try
+%                 dxAviCloseMex(this(I).avi_hdl);
+%                 st(I) = 0;
+%             catch
+%                 st(I) = -1;
+%             end
+%         end
+%     end
+% else
+%     if (this.avi_hdl)
+%         try
+%             dxAviCloseMex(this.avi_hdl);
+%             st = 0;
+%         catch
+%             st = -1;
+%         end            
+%     end
+% end
 
 

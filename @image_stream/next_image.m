@@ -93,9 +93,9 @@ if (strcmp(this.mode, 'video'))
     frame_index = this.stream_offset + (this.current_position - 1) * this.stream_scaling;
     
     try 
-        mov = aviread(this.start_filename, frame_index);
+        mov = read(this.start_filename, frame_index);
     catch
-        pixmap = dxAviReadMex(this.avi_hdl, frame_index);
+        pixmap = read(this.avi_hdl, frame_index);
 	    mov.cdata = reshape(pixmap/255,[this.avi_info.Height,this.avi_info.Width,3]);  
         mov.map = [];
 

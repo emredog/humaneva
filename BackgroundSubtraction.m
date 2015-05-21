@@ -73,18 +73,15 @@ if (nargin == 0)
     min_area = 10;
     one_comp = 0; 
     risk     = [1, 1, 1, 1, 1, 1, 1]; 
-    risk     = [10^80, 10^60, 10^30, 10^80];
 end
 
 if (nargin == 1)
     one_comp = 0; 
     risk     = [1, 1, 1, 1, 1, 1, 1]; 
-    risk     = [10^80, 10^60, 10^30, 10^80];
 end
 
 if (nargin == 2)
     risk     = [1, 1, 1, 1, 1, 1, 1]; 
-    risk     = [10^80, 10^60, 10^30, 10^80];
 end
     
 % Add paths to the toolboxes
@@ -93,99 +90,111 @@ addpath('./TOOLBOX_common/');
 addpath('./TOOLBOX_dxAvi/');
 addpath('./TOOLBOX_readc3d/'); 
 
+% Path for backgound images
+BG_PATH = '../Background/';
+
+% Compute background statistics. This generally will take a while to run 
+% (up to 24 hours), but only needs to be done once. 
+for CAM = 1:7
+    fprintf('Computing background statistics for CAM %d.\n', CAM)
+    if (CAM < 4)
+        savefilename = [BG_PATH 'Background_(C' num2str(CAM) ').mat'];
+    else        
+        savefilename = [BG_PATH 'Background_(BW' num2str(CAM-3) ').mat'];
+    end
+
+    if (~exist(savefilename))
+        sum_of_squares = {};
+        sum_of_values = {};
+        bg_means = {};
+        bg_vars  = {};
+
+        if (CAM < 4)
+            filelist = dir([BG_PATH 'Background_*_(C' num2str(CAM) ').avi']);
+            % filelist = dir([BG_PATH 'Background_*_(C' num2str(CAM) ')']);
+        else        
+            filelist = dir([BG_PATH 'Background_*_(BW' num2str(CAM-3) ').avi']);
+            % filelist = dir([BG_PATH 'Background_*_(BW' num2str(CAM-3) ')']);
+        end
+
+        total_frames = zeros(size(filelist));
+
+        % Over all images from a sequence compute the sufficient statistics
+        % (that is sum of values for all pixels, and sum of squares). 
+        for F = 1:length(filelist)
+            filename = [BG_PATH '/' filelist(F).name];
+            % filename = [BG_PATH '/' filelist(F).name '/'];
+            fprintf('Processing filename %s.\n', filename);
+
+            IM_STREAM = image_stream(filename, 1);
+
+            fprintf('  frame number %.4d/%.4d', 0, n_frames(IM_STREAM));
+            for frame_num = 1:n_frames(IM_STREAM)
+                [this, fname, img, map] = cur_image(IM_STREAM,  frame_num);
+                fprintf('\b\b\b\b\b\b\b\b\b%.4d/%.4d', frame_num, n_frames(IM_STREAM));
+
+                if (frame_num == 1)
+                    sum_of_values{F}  = img;
+                    sum_of_squares{F} = img.^2;
+                    total_frames(F)   = 1;
+                else
+                    sum_of_values{F}  = sum_of_values{F} + img;
+                    sum_of_squares{F} = sum_of_squares{F} + img.^2;
+                    total_frames(F)   = total_frames(F) + 1;
+                end
+            end
+            fprintf('\n');
+            
+            close(IM_STREAM);
+
+            % compute statistics
+            bg_means{F} = sum_of_values{F} / total_frames(F);
+            bg_vars{F}  = sum_of_squares{F} / total_frames(F) - (sum_of_values{F} / total_frames(F)).^2;    
+
+            % if pixel has no variance (e.g. saturated in all frames) then
+            % assign a reasonable variance.
+            ind = find(bg_vars{F} == 0.0);
+            bg_vars{F}(ind) = 1.0000e-003;        
+        end
+
+        % Save the result in a file.
+        save(savefilename, 'bg_means', 'bg_vars', '-MAT');
+        fprintf('  (done).\n')
+    else
+        fprintf('  (already pre-computed).\n')
+    end
+end
+
+
+% Load background statistics
+for CAM = 1:7
+    fprintf('Loading background statistics for CAM %d.\n', CAM)    
+	if (CAM < 4)
+        loadfilename = [BG_PATH 'Background_(C' num2str(CAM) ').mat'];
+        load(loadfilename);
+    else        
+        loadfilename = [BG_PATH 'Background_(BW' num2str(CAM-3) ').mat'];  
+        load(loadfilename);                    
+    end
+	if (CAM < 4)    
+        background(CAM).CameraName          = sprintf('C%d', CAM);
+    else
+        background(CAM).CameraName          = sprintf('BW%d', CAM-3);        
+    end
+    background(CAM).BackgroundMeans     = bg_means;
+    background(CAM).BackgroundVariances = bg_vars;     
+end
         
 
 % Load HumanEva dataset 
-CurrentDataset = he_dataset('HumanEvaII', 'Test'); 
+CurrentDataset = he_dataset('HumanEvaI', 'Validate'); 
 
 % Perform background subtraction
 for SEQ = 1:length(CurrentDataset)
-    Subject     = char(get(CurrentDataset(SEQ), 'SubjectName'));
-    DatasetPath = char(get(CurrentDataset(SEQ), 'DatasetBasePath'));
-    
     fprintf('Loading sequence ... \n')
-    fprintf('    Subject: %s \n', Subject);
+    fprintf('    Subject: %s \n', char(get(CurrentDataset(SEQ), 'SubjectName')));
     fprintf('    Action: %s \n',  char(get(CurrentDataset(SEQ), 'ActionType')));    
     fprintf('    Trial: %s \n\n',  char(get(CurrentDataset(SEQ), 'Trial')));
-        
-    
-    % Path for backgound images
-    BG_PATH = [DatasetPath '/' Subject '/Background/'];
-
-    % Compute background statistics. This generally will take a while to run 
-    % (up to 24 hours), but only needs to be done once. 
-    for CAM = 1:4
-        fprintf('Computing background statistics for CAM %d.\n', CAM)
-        savefilename = [BG_PATH 'Background_(C' num2str(CAM) ').mat'];
-
-        if (~exist(savefilename))
-            sum_of_squares = {};
-            sum_of_values = {};
-            bg_means = {};
-            bg_vars  = {};
-
-            % filelist = dir([BG_PATH 'Background_*_(C' num2str(CAM) ').avi']);
-            filelist = dir([BG_PATH 'Background_*_(C' num2str(CAM) ')']);
-
-            total_frames = zeros(size(filelist));
-
-            % Over all images from a sequence compute the sufficient statistics
-            % (that is sum of values for all pixels, and sum of squares). 
-            for F = 1:length(filelist)
-                % filename = [BG_PATH '/' filelist(F).name];
-                filename = [BG_PATH '/' filelist(F).name '/'];
-                fprintf('Processing filename %s.\n', filename);
-
-                IM_STREAM = image_stream(filename, 1);
-
-                fprintf('  frame number %.4d/%.4d', 0, n_frames(IM_STREAM));
-                for frame_num = 1:n_frames(IM_STREAM)
-                    [this, fname, img, map] = cur_image(IM_STREAM,  frame_num);
-                    fprintf('\b\b\b\b\b\b\b\b\b%.4d/%.4d', frame_num, n_frames(IM_STREAM));
-
-                    if (frame_num == 1)
-                        sum_of_values{F}  = img;
-                        sum_of_squares{F} = img.^2;
-                        total_frames(F)   = 1;
-                    else
-                        sum_of_values{F}  = sum_of_values{F} + img;
-                        sum_of_squares{F} = sum_of_squares{F} + img.^2;
-                        total_frames(F)   = total_frames(F) + 1;
-                    end
-                end
-                fprintf('\n');
-
-                close(IM_STREAM);
-
-                % compute statistics
-                bg_means{F} = sum_of_values{F} / total_frames(F);
-                bg_vars{F}  = sum_of_squares{F} / total_frames(F) - (sum_of_values{F} / total_frames(F)).^2;    
-
-                % if pixel has no variance (e.g. saturated in all frames) then
-                % assign a reasonable variance.
-                ind = find(bg_vars{F} == 0.0);
-                bg_vars{F}(ind) = 1.0000e-003;        
-            end
-
-            % Save the result in a file.
-            save(savefilename, 'bg_means', 'bg_vars', '-MAT');
-            fprintf('  (done).\n')
-        else
-            fprintf('  (already pre-computed).\n')
-        end
-    end
-
-
-    % Load background statistics
-    for CAM = 1:4
-        fprintf('Loading background statistics for CAM %d.\n', CAM)    
-        loadfilename = [BG_PATH 'Background_(C' num2str(CAM) ').mat'];
-        load(loadfilename);
-        background(CAM).CameraName          = sprintf('C%d', CAM);
-        background(CAM).BackgroundMeans     = bg_means;
-        background(CAM).BackgroundVariances = bg_vars;     
-    end
-    
     
     % Load the sequence
     [ImageStream, ImageStream_Enabled, MocapStream, MocapStream_Enabled] ...
@@ -232,7 +241,11 @@ for SEQ = 1:length(CurrentDataset)
 
                 % Display resulting binary background subtraction image
                 imshow(bg_img);                
-                title(sprintf('Camera C%d', CAM));
+                if (CAM < 4)
+                    title(sprintf('Camera C%d', CAM));
+                else
+                    title(sprintf('Camera BW%d', CAM-3));
+                end
             end              
             pause(0.1);
         end

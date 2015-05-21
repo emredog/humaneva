@@ -1,5 +1,5 @@
 function [] = ComputeError2DExample()
-% Example of how HumanEva-II dataset should be used to compute 2D error with
+% Example of how HumanEva dataset should be used to compute 2D error with
 % validation data.
 %
 % Written by: Leonid Sigal 
@@ -38,12 +38,18 @@ elseif (CAM == 2)
 elseif (CAM == 3)
     CameraName = 'C3';
 elseif (CAM == 4)
-    CameraName = 'C4';
+    CameraName = 'BW1';
+elseif (CAM == 5)
+    CameraName = 'BW2';
+elseif (CAM == 6)
+    CameraName = 'BW3';
+elseif (CAM == 7)
+    CameraName = 'BW4';
 end
 
 % You can replace the 'Validate' by 'Train' or 'Test', to make this work
 % on different sub-sets of data.
-CurrentDataset = he_dataset('HumanEvaII', 'Test'); 
+CurrentDataset = he_dataset('HumanEvaI', 'Validate'); 
 
 
 for SEQ = 1:length(CurrentDataset)
@@ -95,9 +101,7 @@ for SEQ = 1:length(CurrentDataset)
                 %         .
                 % set(custom2DHead, 'torsoDistal',   [1, 2]);  % 2D location of the joint
                 
-                fprintf('Absolute error for frame %d is: %f (pix)\n', FRAME, error(groundTruth2DPose, custom2DPose));                    
-                fprintf('Relative error for frame %d is: %f (pix)\n', FRAME, error_rel(groundTruth2DPose, custom2DPose));                    
-                
+                fprintf('Error for frame %d is: %f (pix)\n', FRAME, error(groundTruth2DPose, custom2DPose));                    
             else
                 warning('Mocap data is invalid');
             end

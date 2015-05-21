@@ -1,8 +1,8 @@
-function [hdl, inf] = dxAviOpen(fname);
+function [hdl, inf] = dxAviOpen(fname)
 
-	[hdl, t] = dxAviOpenMex(fname);
-	inf.Width = t(1);
-	inf.Height = t(2);
-	inf.NumFrames = t(3);
-	inf.fps = t(4);
-	inf.total_time_sec = t(5);	
+	hdl = VideoReader(fname);
+	inf.Width = hdl.Width;
+	inf.Height = hdl.Height;
+	inf.NumFrames = hdl.NumberOfFrames;
+	inf.fps = hdl.FrameRate;
+	inf.total_time_sec = hdl.Duration;	
